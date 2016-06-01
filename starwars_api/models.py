@@ -1,3 +1,5 @@
+from urlparse import urlparse
+
 from starwars_api.client import SWAPIClient
 from starwars_api.exceptions import SWAPIClientError
 
@@ -11,7 +13,8 @@ class BaseModel(object):
         Dynamically assign all attributes in `json_data` as instance
         attributes of the Model.
         """
-        pass
+        for key, value in json_data.items():
+            setattr(self, key, value)
 
     @classmethod
     def get(cls, resource_id):
@@ -19,7 +22,8 @@ class BaseModel(object):
         Returns an object of current Model requesting data to SWAPI using
         the api_client.
         """
-        pass
+        resource = getattr(cls, 'RESOURCE_NAME')
+        return cls(getattr(api_client, 'get_' + resource)(resource_id))
 
     @classmethod
     def all(cls):
@@ -28,7 +32,8 @@ class BaseModel(object):
         later in charge of performing requests to SWAPI for each of the
         pages while looping.
         """
-        pass
+        resource = getattr(cls, 'RESOURCE_NAME')
+        return globals()[resource.capitalize() + 'QuerySet'](getattr(api_client, 'get_' + resource)(page=1), resource)
 
 
 class People(BaseModel):
@@ -54,18 +59,39 @@ class Films(BaseModel):
 
 class BaseQuerySet(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, json_data, resource):
+        self.current = 0
+        self.page = 1
+        self.json_data = json_data
+        self.count_total = json_data['count']
+        self.objects = json_data['results']
+        self.resource = resource
 
     def __iter__(self):
-        pass
+        """
+        Resets the iterable elements back to their original values
+        """
+        self.current = 0
+        self.page = 1
+        self.objects = self.json_data['results']
+        return self
 
     def __next__(self):
         """
         Must handle requests to next pages in SWAPI when objects in the current
         page were all consumed.
         """
-        pass
+        if self.current == self.count():
+            raise StopIteration()
+        
+        if len(self.objects) == 0:
+            new_data = api_client.get_people(page=self.page)
+            self.objects = new_data["results"]
+            self.current += 1
+            return globals()[self.resource.capitalize()](self.objects.pop(0))
+        else:
+            self.current += 1
+            return globals()[self.resource.capitalize()](self.objects.pop(0))
 
     next = __next__
 
@@ -75,14 +101,14 @@ class BaseQuerySet(object):
         If the counter is not persisted as a QuerySet instance attr,
         a new request is performed to the API in order to get it.
         """
-        pass
+        return self.count_total
 
 
 class PeopleQuerySet(BaseQuerySet):
     RESOURCE_NAME = 'people'
 
-    def __init__(self):
-        super(PeopleQuerySet, self).__init__()
+    def __init__(self, json_data, resource):
+        super(PeopleQuerySet, self).__init__(json_data, resource)
 
     def __repr__(self):
         return 'PeopleQuerySet: {0} objects'.format(str(len(self.objects)))
@@ -91,8 +117,8 @@ class PeopleQuerySet(BaseQuerySet):
 class FilmsQuerySet(BaseQuerySet):
     RESOURCE_NAME = 'films'
 
-    def __init__(self):
-        super(FilmsQuerySet, self).__init__()
+    def __init__(self, json_data, resource):
+        super(FilmsQuerySet, self).__init__(json_data, resource)
 
     def __repr__(self):
         return 'FilmsQuerySet: {0} objects'.format(str(len(self.objects)))
