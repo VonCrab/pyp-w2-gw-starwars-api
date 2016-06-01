@@ -1,10 +1,7 @@
-from urlparse import urlparse
-
 from starwars_api.client import SWAPIClient
 from starwars_api.exceptions import SWAPIClientError
 
 api_client = SWAPIClient()
-
 
 class BaseModel(object):
 
