@@ -3,7 +3,6 @@ from starwars_api.exceptions import SWAPIClientError
 
 api_client = SWAPIClient()
 
-
 class BaseModel(object):
 
     def __init__(self, json_data):
@@ -21,7 +20,7 @@ class BaseModel(object):
         the api_client.
         """
         resource = getattr(cls, 'RESOURCE_NAME')
-        return cls(getattr(api_client, 'get_' + resource)(resource_id))cd 
+        return cls(getattr(api_client, 'get_' + resource)(resource_id))
 
     @classmethod
     def all(cls):
