@@ -1,5 +1,3 @@
-from urlparse import urlparse
-
 from starwars_api.client import SWAPIClient
 from starwars_api.exceptions import SWAPIClientError
 
@@ -23,7 +21,7 @@ class BaseModel(object):
         the api_client.
         """
         resource = getattr(cls, 'RESOURCE_NAME')
-        return cls(getattr(api_client, 'get_' + resource)(resource_id))
+        return cls(getattr(api_client, 'get_' + resource)(resource_id))cd 
 
     @classmethod
     def all(cls):
